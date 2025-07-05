@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Invitation Sent{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="alert alert-success text-center mt-5 shadow-lg">
+            <h2 class="alert-heading"><i class="bi bi-check-circle-fill"></i> Success!</h2>
+            <p>A new doctor account has been created for <strong>{{ doctor_email }}</strong>.</p>
+            <p class="mb-0">Please provide them with the following temporary password to log in:</p>
+            <hr>
+            <h4 class="font-monospace bg-light p-3 rounded">
+                {{ temp_password }}
+            </h4>
+            <hr>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'invite_doctor' %}" class="btn btn-secondary">
+                <i class="bi bi-person-plus-fill"></i> Invite Another Doctor
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{%block extra_styles %}
+<style>
+  /* Target the container we just added a class to */
+  .report-content {
+    line-height: 1.6; /* Increase the line height for better readability */
+  }
+
+  /* Target any paragraph (<p>) inside our container */
+  .report-content p {
+    margin-bottom: 1rem; /* Adds a full line of space after each paragraph */
+  }
+
+  /* Target any heading (like ### Summary) inside our container */
+  .report-content h3 {
+    margin-top: 1.5rem; /* Add extra space above headings */
+    margin-bottom: 0.75rem;
+  }
+
+  /* Target any bulleted list (<ul>) inside our container */
+  .report-content ul {
+    margin-bottom: 1rem; /* Add space after the entire list */
+    padding-left: 2rem; /* Give the list a bit more indentation */
+  }
+
+  /* Target each list item (<li>) inside our container */
+  .report-content li {
+    margin-bottom: 0.5rem; /* Add a small space between each bullet point */
+  }
+</style>
+{% endblock extra_styles %}
+{% block title %}Review Assessment for {{patient.patient_identifier }}{% endblock %} 
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">
+      <i class="bi bi-file-earmark-medical text-primary"></i> Assessment Review
+    </h1>
+    <a
+      href="{{ request.META.HTTP_REFERER|default:'/dashboard/' }}"
+      class="btn btn-secondary"
+    >
+      <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+  </div>
+
+  <div class="row">
+    <!-- Patient Data Column -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h4><i class="bi bi-person-lines-fill"></i> Patient Summary</h4>
+        </div>
+        <div class="card-body">
+          <p><strong>Patient ID:</strong> {{ patient.patient_identifier }}</p>
+          <p>
+            <strong>Uploaded On:</strong> {{ patient.created_at|date:"Y-m-d" }}
+          </p>
+          <p>
+            <strong>Uploaded By:</strong>
+                {% with uploader=patient.uploaded_by %}
+                    {% if uploader %}
+                        {# Use the username (which is the email in our setup). This is a safer attribute. #}
+                        {{ uploader.username }}
+                    {% else %}
+                        {# This will display if the uploader was deleted. #}
+                        <span class="text-muted"><em>(Account not available)</em></span>
+                    {% endif %}
+              {% endwith %}
+          </p>
+          <hr />
+          <h5>Test Results</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Glucose:</span>
+              <strong>{{ patient.glucose|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>HbA1c:</span>
+              <strong>{{ patient.hba1c|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Total Cholesterol:</span>
+              <strong>{{ patient.total_cholesterol|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>LDL:</span> <strong>{{ patient.ldl|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>HDL:</span> <strong>{{ patient.hdl|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Triglycerides:</span>
+              <strong>{{ patient.triglycerides|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>ALT:</span> <strong>{{ patient.alt|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>AST:</span> <strong>{{ patient.ast|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Creatinine:</span>
+              <strong>{{ patient.creatinine|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Urea:</span>
+              <strong>{{ patient.urea|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>CRP:</span> <strong>{{ patient.crp|default:'N/A' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>WBC:</span> <strong>{{ patient.wbc|default:'N/A' }}</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Report and Doctor Review Column -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h4><i class="bi bi-robot"></i> AI-Generated Risk Report</h4>
+        </div>
+        <div class="card-body report-content">
+          {{ assessment.html_report|safe }}
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h4><i class="bi bi-pencil-square"></i> Doctor's Review</h4>
+        </div>
+        <div class="card-body">
+          {% if assessment.status == 'REVIEWED' %}
+          {% with reviewer=assessment.reviewed_by %}
+            <p>
+                <strong>Reviewed by:</strong>
+                {% if reviewer %}
+                    Dr. {{ reviewer.get_full_name|default:reviewer.username }}
+                {% else %}
+                    <span class="text-muted"><em>(Reviewer account not available)</em></span>
+                {% endif %}
+            </p>
+            <p>
+                <strong>Reviewed on:</strong> {{ assessment.reviewed_at|date:"Y-m-d H:i" }}
+            </p>
+        {% endwith %}
+
+        <div class="p-3 bg-light rounded mt-3">
+            <h5 class="mb-2">Final Comments</h5>
+            <p class="mb-0">{{ assessment.doctor_comments|linebreaks }}</p>
+        </div>
+    {% elif user.role == 'DOCTOR' %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.doctor_comments.label_tag }}
+                {{ form.doctor_comments }}
+            </div>
+            <button type="submit" class="btn btn-success w-100">
+                <i class="bi bi-check-circle-fill"></i> Submit Final Review
+            </button>
+        </form>
+    {% else %}
+        <p class="text-muted">This report is pending review by a doctor.</p>
+    {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

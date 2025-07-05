@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Upload Patient Data{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-lg border-0 mt-4">
+            <div class="card-header bg-primary text-white">
+                <h3><i class="bi bi-cloud-upload-fill"></i> Upload Patient Data via CSV</h3>
+            </div>
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">CSV File Requirements</h5>
+                    <p>Your CSV file must contain a header row. One column must be named <strong>patient_identifier</strong> and contain a unique ID for each patient within your hospital.</p>
+                    <p>The following headers for blood test markers are also required (case-insensitive):</p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle-fill text-success"></i> Glucose, HbA1c, Total_Cholesterol, LDL, HDL, Triglycerides, ALT, AST, Creatinine, Urea, CRP, WBC</li>
+                    </ul>
+                </div>
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.csv_file.label_tag }}
+                        {{ form.csv_file }}
+                        <div class="form-text">{{ form.csv_file.help_text }}</div>
+                        {% if form.csv_file.errors %}
+                        <div class="text-danger small">{{ form.csv_file.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload File
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
