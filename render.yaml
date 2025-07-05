@@ -1,0 +1,45 @@
+# render.yaml
+
+# This defines the services that make up your application.
+services:
+  # 1. A PostgreSQL database
+  - type: psql
+    name: health-ai-db # CHANGE THIS: A unique name for your database
+    region: ohio # Or choose a region closer to you: oregon, frankfurt, singapore
+    plan: free
+    # The major version of PostgreSQL
+    psqlVersion: 16
+
+  # 2. The Django Web Service
+  - type: web
+    name: health-ai-app # CHANGE THIS: A unique name for your web app (this will be in your URL)
+    region: ohio # Must be the same region as the database for low latency
+    plan: free # Or choose a paid plan for more resources
+    # The runtime environment for your app
+    env: python
+    # How to build your application
+    buildCommand: "./build.sh"
+    # How to start your application (from Procfile)
+    startCommand: "gunicorn config.wsgi:application"
+    # Health check to ensure your app is running before it's considered "live"
+    healthCheckPath: /
+    # Environment variables
+    envVars:
+      - key: DATABASE_URL
+        # This special value tells Render to use the connection string from the 'health-ai-db' service defined above
+        fromService:
+          type: psql
+          name: health-ai-db # MUST MATCH THE DATABASE NAME ABOVE
+      - key: SECRET_KEY
+        # This tells Render to create a random string for this secret key, so you don't have to generate it yourself
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        # A recommended setting for Gunicorn
+        value: 4
+      - key: PYTHON_VERSION
+        value: 3.13.3 # Or your specific Python version
+      # --- ADD THIS NEW KEY FOR YOUR MISTRAL API KEY ---
+      - key: HUGGING_FACE_API_KEY
+        # 'sync: false' marks this as a secret that will be managed
+        # in the Render dashboard, NOT in this YAML file.
+        sync: false
