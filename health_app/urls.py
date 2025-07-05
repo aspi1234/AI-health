@@ -20,6 +20,7 @@ urlpatterns = [
     path('patient/<int:pk>/analyze/', views.AnalyzePatientRecordView.as_view(), name='analyze_record'),
     path('assessment/<int:pk>/', views.AssessmentDetailView.as_view(), name='view_assessment'),
     path('manage/export-reports/', views.export_reviewed_reports_csv, name='export_reports_csv'),
+    path('assessment/<int:pk>/assign/', views.AssignDoctorView.as_view(), name='assign_doctor'),
 
     # Admin Actions
     path('manage/invite-doctor/', views.InviteDoctorView.as_view(), name='invite_doctor'),

@@ -16,6 +16,8 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView
 from django.db import transaction
+from django.db.models import Q
+
 
 from .models import User, Hospital, PatientRecord,RiskAssessment
 from .services import generate_risk_assessment_for_record
@@ -35,7 +37,6 @@ class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 # --- Registration and Login ---
 class HospitalRegistrationView(View):
-    # ... (This view remains unchanged)
     def get(self, request):
         form = HospitalRegistrationForm()
         return render(request, 'registration/register.html', {'form': form})
@@ -67,6 +68,10 @@ class CustomLoginView(LoginView):
 
 # --- Dashboards & Redirects ---
 class DashboardRedirectView(LoginRequiredMixin, View):
+    """
+    Redirects users to the correct dashboard based on their role.
+    This view only needs a 'get' method.
+    """
     def get(self, request):
         user = request.user
         if user.role == User.Role.HOSPITAL_ADMIN:
@@ -74,7 +79,9 @@ class DashboardRedirectView(LoginRequiredMixin, View):
         elif user.role == User.Role.DOCTOR:
             return redirect('doctor_dashboard')
         else:
+            # Fallback for any other case
             return redirect('login')
+
 
 class AdminDashboardView(AdminRequiredMixin, View):
     def get(self, request):
@@ -82,11 +89,12 @@ class AdminDashboardView(AdminRequiredMixin, View):
         new_records = []
         if newly_uploaded_ids:
             new_records = PatientRecord.objects.filter(pk__in=newly_uploaded_ids)
+            # Clear the session variable after use
             del request.session['newly_uploaded_ids']
         context = {'new_records': new_records}
         return render(request, 'health_app/admin_dashboard.html', context)
 
-# --- REPLACE THE EXISTING DoctorDashboardView ---
+# --- THIS IS THE CORRECTED DoctorDashboardView ---
 class DoctorDashboardView(DoctorRequiredMixin, ListView):
     model = RiskAssessment
     template_name = 'health_app/doctor_dashboard.html'
@@ -95,21 +103,26 @@ class DoctorDashboardView(DoctorRequiredMixin, ListView):
 
     def get_queryset(self):
         """
-        This method is the core of the doctor's dashboard. It builds the
-        worklist of assessments that are pending review.
+        Builds the doctor's worklist. A doctor sees reports that are:
+        - Assigned directly to them
+        OR
+        - Unassigned and belong to their hospital.
+        This uses the new "Assign Doctor" logic.
         """
         user = self.request.user
-        # We start with the RiskAssessment model.
-        # Then, we filter to get only records with the 'PENDING_REVIEW' status.
-        # Crucially, we use '__' to traverse the ForeignKey relationship from
-        # RiskAssessment -> PatientRecord -> Hospital to ensure the doctor
-        # only sees records from their own hospital.
+
+        # Q objects allow for complex queries with OR conditions.
+        assigned_to_me = Q(assigned_doctor=user)
+        unassigned_in_my_hospital = Q(assigned_doctor__isnull=True)
+
         queryset = RiskAssessment.objects.filter(
+            (assigned_to_me | unassigned_in_my_hospital),  # The core logic
             status=RiskAssessment.Status.PENDING_REVIEW,
             patient_record__hospital=user.hospital
         ).select_related(
-            'patient_record', # Also fetch the related patient record to avoid extra queries
-        ).order_by('patient_record__created_at') # Show the oldest ones first
+            'patient_record',
+            'assigned_doctor'
+        ).order_by('assigned_doctor', '-patient_record__created_at') # Show assigned first, then newest unassigned
 
         return queryset
 
@@ -440,3 +453,40 @@ def export_reviewed_reports_csv(request):
 
     # 7. Return the response
     return response
+
+class AssignDoctorView(AdminRequiredMixin, View):
+    """
+    Handles the POST request from an admin to assign a doctor to an assessment.
+    """
+    def post(self, request, pk):
+        # 1. Get the assessment object
+        assessment = get_object_or_404(RiskAssessment, pk=pk)
+
+        # 2. Security Check: Ensure the assessment belongs to the admin's hospital
+        if assessment.patient_record.hospital != request.user.hospital:
+            messages.error(request, "You are not authorized to modify this record.")
+            return redirect('patient_list')
+
+        # 3. Get the doctor's ID from the form submission
+        doctor_id = request.POST.get('doctor_id')
+        if not doctor_id:
+            messages.error(request, "No doctor was selected.")
+            return redirect('patient_list')
+
+        # 4. Get the doctor user object
+        try:
+            doctor_to_assign = User.objects.get(
+                pk=doctor_id,
+                hospital=request.user.hospital, # Security: Doctor must be in the same hospital
+                role=User.Role.DOCTOR          # Security: User must be a doctor
+            )
+        except User.DoesNotExist:
+            messages.error(request, "The selected doctor could not be found or is invalid.")
+            return redirect('patient_list')
+
+        # 5. Perform the assignment
+        assessment.assigned_doctor = doctor_to_assign
+        assessment.save()
+
+        messages.success(request, f"Report for patient {assessment.patient_record.patient_identifier} has been assigned to Dr. {doctor_to_assign.get_full_name()}.")
+        return redirect('patient_list')
