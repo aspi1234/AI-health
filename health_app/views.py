@@ -344,7 +344,16 @@ class AssessmentDetailView(DoctorOrAdminRequiredMixin, View):
         if assessment.patient_record.hospital != request.user.hospital:
             messages.error(request, "You are not authorized to view this record.")
             return redirect('dashboard_redirect')
+
+        # --- NEW, STRICTER SECURITY CHECK ---
+        # If the user is a doctor AND the report has an assigned doctor that is NOT them...
+        if (request.user.role == User.Role.DOCTOR and 
+            assessment.assigned_doctor and 
+            assessment.assigned_doctor != request.user):
             
+            messages.error(request, "This report is assigned to another doctor and you are not authorized to view it.")
+            return redirect('doctor_dashboard')
+        # --- END OF NEW CHECK ---
         
         assessment.html_report = markdown.markdown(assessment.ai_generated_report)
         

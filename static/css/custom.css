@@ -1,0 +1,58 @@
+/* static/css/custom.css */
+
+/* Define our new primary color as a CSS variable for easy reuse */
+:root {
+  --app-primary-color: #dc3545; /* Bootstrap's standard 'danger' red */
+  --app-primary-color-dark: #b02a37; /* A slightly darker red for hover/active states */
+}
+
+/* --- OVERRIDE BOOTSTRAP'S PRIMARY COLOR CLASSES --- */
+
+/* Backgrounds */
+.bg-primary {
+  background-color: var(--app-primary-color) !important;
+}
+
+/* Text */
+.text-primary {
+  color: var(--app-primary-color) !important;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--app-primary-color);
+  border-color: var(--app-primary-color);
+}
+.btn-primary:hover {
+  background-color: var(--app-primary-color-dark);
+  border-color: var(--app-primary-color-dark);
+}
+
+.btn-outline-primary {
+  color: var(--app-primary-color);
+  border-color: var(--app-primary-color);
+}
+.btn-outline-primary:hover {
+  background-color: var(--app-primary-color);
+  border-color: var(--app-primary-color);
+  color: #fff;
+}
+
+/* Navbar */
+.navbar-dark .navbar-brand:hover,
+.navbar-dark .navbar-brand:focus {
+  color: #fff;
+}
+
+/* Links */
+a {
+  color: var(--app-primary-color);
+}
+a:hover {
+  color: var(--app-primary-color-dark);
+}
+
+/* Border Colors */
+.border-primary {
+  border-color: var(--app-primary-color) !important;
+}

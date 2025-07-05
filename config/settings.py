@@ -130,3 +130,11 @@ AUTH_USER_MODEL = 'health_app.User'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard_redirect'
 LOGOUT_REDIRECT_URL = 'login'
+
+STATIC_URL = 'static/'
+
+# --- ADD THIS SETTING ---
+# This tells Django to look in the 'static' folder in your project root.
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
