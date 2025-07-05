@@ -30,7 +30,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['ai-health-1-azwb.onrender.com/']
+CSRF_TRUSTED_ORIGINS = ['https://ai-health-1-azwb.onrender.com'] # Use your app's domain
 
 
 # Application definition
