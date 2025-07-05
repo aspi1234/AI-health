@@ -4,6 +4,8 @@ import io
 import random
 import string
 import markdown
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.generic import ListView,DetailView
@@ -374,3 +376,67 @@ class AssessmentDetailView(DoctorOrAdminRequiredMixin, View):
             'form': form
         }
         return render(request, 'health_app/assessment_detail.html', context)
+
+@login_required
+def export_reviewed_reports_csv(request):
+    """
+    Handles the request to download all reviewed risk assessments as a CSV file.
+    This view is restricted to Hospital Admins.
+    """
+    # 1. Security Check: Ensure the user is a Hospital Admin
+    if request.user.role != User.Role.HOSPITAL_ADMIN:
+        messages.error(request, "You are not authorized to perform this action.")
+        return redirect('dashboard_redirect')
+
+    # 2. Prepare the HTTP Response to indicate a CSV download
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="reviewed_reports_{timezone.now().strftime("%Y-%m-%d")}.csv"'},
+    )
+
+    # 3. Create a CSV writer
+    writer = csv.writer(response)
+
+    # 4. Define CSV Header Row
+    # We will include patient data, AI report, and doctor's review details.
+    header = [
+        'Patient Identifier', 'Glucose', 'HbA1c', 'Total Cholesterol', 'LDL', 'HDL',
+        'Triglycerides', 'ALT', 'AST', 'Creatinine', 'Urea', 'CRP', 'WBC',
+        'AI Generated Report', 'Doctor Comments', 'Reviewed By (Doctor)', 'Reviewed At'
+    ]
+    writer.writerow(header)
+
+    # 5. Query the Database for Reviewed Assessments
+    # Fetch all assessments marked as 'REVIEWED' for the admin's hospital.
+    # Use select_related to efficiently join related models in a single database query.
+    reviewed_assessments = RiskAssessment.objects.filter(
+        status=RiskAssessment.Status.REVIEWED,
+        patient_record__hospital=request.user.hospital
+    ).select_related('patient_record', 'reviewed_by').order_by('reviewed_at')
+
+    # 6. Write Data Rows to the CSV
+    for assessment in reviewed_assessments:
+        patient = assessment.patient_record
+        row = [
+            patient.patient_identifier,
+            patient.glucose,
+            patient.hba1c,
+            patient.total_cholesterol,
+            patient.ldl,
+            patient.hdl,
+            patient.triglycerides,
+            patient.alt,
+            patient.ast,
+            patient.creatinine,
+            patient.urea,
+            patient.crp,
+            patient.wbc,
+            assessment.ai_generated_report,
+            assessment.doctor_comments,
+            assessment.reviewed_by.get_full_name() if assessment.reviewed_by else 'N/A',
+            assessment.reviewed_at.strftime("%Y-%m-%d %H:%M") if assessment.reviewed_at else 'N/A'
+        ]
+        writer.writerow(row)
+
+    # 7. Return the response
+    return response

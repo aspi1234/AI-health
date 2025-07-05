@@ -19,6 +19,7 @@ urlpatterns = [
     path('patients/<int:pk>/delete/', views.DeletePatientView.as_view(), name='delete_patient'),
     path('patient/<int:pk>/analyze/', views.AnalyzePatientRecordView.as_view(), name='analyze_record'),
     path('assessment/<int:pk>/', views.AssessmentDetailView.as_view(), name='view_assessment'),
+    path('manage/export-reports/', views.export_reviewed_reports_csv, name='export_reports_csv'),
 
     # Admin Actions
     path('manage/invite-doctor/', views.InviteDoctorView.as_view(), name='invite_doctor'),
