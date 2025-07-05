@@ -3,6 +3,7 @@ asgiref==3.9.0
 cachetools==5.5.2
 certifi==2025.6.15
 charset-normalizer==3.4.2
+dj-database-url==3.0.1
 Django==5.2.4
 filelock==3.18.0
 fsspec==2025.5.1
@@ -14,6 +15,7 @@ google-auth-httplib2==0.2.0
 googleapis-common-protos==1.70.0
 grpcio==1.73.1
 grpcio-status==1.71.2
+gunicorn==23.0.0
 hf-xet==1.1.5
 httplib2==0.22.0
 huggingface-hub==0.33.2
@@ -22,6 +24,8 @@ Markdown==3.8.2
 packaging==25.0
 proto-plus==1.26.1
 protobuf==5.29.5
+psycopg==3.2.9
+psycopg-binary==3.2.9
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pydantic==2.11.7
@@ -37,3 +41,4 @@ typing-inspection==0.4.1
 typing_extensions==4.14.0
 uritemplate==4.2.0
 urllib3==2.5.0
+whitenoise==6.9.0
