@@ -8,7 +8,7 @@ services:
     region: ohio # Or choose a region closer to you: oregon, frankfurt, singapore
     plan: free
     # The major version of PostgreSQL
-    psqlVersion: 16
+    postgresMajorVersion: 16
 
   # 2. The Django Web Service
   - type: web
