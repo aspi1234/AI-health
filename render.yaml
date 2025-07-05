@@ -9,6 +9,8 @@ services:
     plan: free
     # The major version of PostgreSQL
     postgresMajorVersion: 16
+    databaseName: health_ai_db_data # The actual name of the database inside the instance
+    user: health_ai_user # The username for connecting to the database
 
   # 2. The Django Web Service
   - type: web
