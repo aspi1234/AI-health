@@ -94,7 +94,6 @@ class AdminDashboardView(AdminRequiredMixin, View):
         context = {'new_records': new_records}
         return render(request, 'health_app/admin_dashboard.html', context)
 
-# --- THIS IS THE CORRECTED DoctorDashboardView ---
 class DoctorDashboardView(DoctorRequiredMixin, ListView):
     model = RiskAssessment
     template_name = 'health_app/doctor_dashboard.html'

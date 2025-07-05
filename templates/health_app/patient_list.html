@@ -21,69 +21,107 @@
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
+                    
+                    {# --- REPLACE THE ENTIRE TBODY WITH THIS --- #}
                     <tbody>
-    {% for patient in patients %}
-    <tr>
-        <td><strong>{{ patient.patient_identifier }}</strong></td>
-        <td>{{ patient.created_at|date:"Y-m-d H:i" }}</td>
-        <td>
-            {# --- DYNAMIC STATUS BADGE --- #}
-            {% if patient.assessment %}
-                {% if patient.assessment.status == 'REVIEWED' %}
-                    <span class="badge bg-success">Reviewed</span>
-                {% else %}
-                    <span class="badge bg-warning">Pending Review</span>
-                {% endif %}
-            {% else %}
-                <span class="badge bg-secondary">Not Analyzed</span>
-            {% endif %}
-            {# --- END DYNAMIC STATUS --- #}
-        </td>
-        <td class="text-center">
-            {# --- DYNAMIC & CONDITIONAL ACTIONS --- #}
-            
-            {# 1. Show "Analyze" button only if no assessment exists AND user is an Admin #}
-            {% if not patient.assessment and user.role == 'HOSPITAL_ADMIN' %}
-                <form action="{% url 'analyze_record' pk=patient.pk %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-sm" title="Analyze with AI">
-                        <i class="bi bi-robot"></i> Analyze
-                    </button>
-                </form>
-            {% endif %}
+                        {% for patient in patients %}
+                        <tr>
+                            <td><strong>{{ patient.patient_identifier }}</strong></td>
+                            <td>{{ patient.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                {# --- DYNAMIC STATUS BADGE WITH ASSIGNMENT INFO --- #}
+                                {% if patient.assessment %}
+                                    {% if patient.assessment.status == 'REVIEWED' %}
+                                        <span class="badge bg-success">
+                                            Reviewed by Dr. {{ patient.assessment.reviewed_by.get_full_name|default:'N/A' }}
+                                        </span>
+                                    {% else %} {# PENDING_REVIEW #}
+                                        <span class="badge bg-warning">Pending Review</span>
+                                        {% if patient.assessment.assigned_doctor %}
+                                            <small class="d-block mt-1 text-muted">
+                                                Assigned to: Dr. {{ patient.assessment.assigned_doctor.get_full_name }}
+                                            </small>
+                                        {% else %}
+                                            <small class="d-block mt-1 text-muted">
+                                                (Unassigned)
+                                            </small>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Analyzed</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {# --- ACTION BUTTONS WITH NEW ASSIGNMENT FORM --- #}
+                                
+                                {# 1. Analyze button #}
+                                {% if not patient.assessment and user.role == 'HOSPITAL_ADMIN' %}
+                                    <form action="{% url 'analyze_record' pk=patient.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm" title="Analyze with AI">
+                                            <i class="bi bi-robot"></i> Analyze
+                                        </button>
+                                    </form>
+                                {% endif %}
 
-            {# 2. Show "View Report" button if an assessment EXISTS. For both Admin and Doctor. #}
-            {% if patient.assessment %}
-                {# --- THIS IS THE CORRECTED LINE --- #}
-                <a href="{% url 'view_assessment' pk=patient.assessment.pk %}" class="btn btn-info btn-sm" title="View Report">
-                    <i class="bi bi-file-earmark-text"></i> View
-                 </a>
-            {% endif %}
+                                {# 2. View Report button #}
+                                {% if patient.assessment %}
+                                    <a href="{% url 'view_assessment' pk=patient.assessment.pk %}" class="btn btn-info btn-sm" title="View Report">
+                                        <i class="bi bi-file-earmark-text"></i> View
+                                     </a>
+                                {% endif %}
 
-            {# 3. Secure, Admin-only Delete Button (no changes) #}
-            {% if user.role == 'HOSPITAL_ADMIN' %}
-            <form action="{% url 'delete_patient' patient.pk %}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this record? This action cannot be undone.');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger btn-sm" title="Delete Record">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
-            </form>
-            {% endif %}
-        </td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="4" class="text-center text-muted py-5">
-            <p class="mb-0">No patient records found in your hospital.</p>
-            {% if user.role == 'HOSPITAL_ADMIN' %}
-            <a href="{% url 'add_patient' %}" class="btn btn-success mt-2">
-                <i class="bi bi-plus-circle"></i> Add First Patient Record
-            </a>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</tbody>
+                                {# 3. Admin-only Delete Button #}
+                                {% if user.role == 'HOSPITAL_ADMIN' %}
+                                <form action="{% url 'delete_patient' patient.pk %}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this record?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Delete Record">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {# --- THIS IS THE NEW ASSIGNMENT FORM UI --- #}
+                                {% if user.role == 'HOSPITAL_ADMIN' and patient.assessment and patient.assessment.status == 'PENDING_REVIEW' %}
+                                    <div class="dropdown d-inline">
+                                      <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="assignDropdown{{ patient.assessment.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-person-check-fill"></i> Assign
+                                      </button>
+                                      <ul class="dropdown-menu" aria-labelledby="assignDropdown{{ patient.assessment.pk }}">
+                                        {# This loop relies on the get_doctors() method in your Hospital model #}
+                                        {% for doctor in request.user.hospital.get_doctors %}
+                                            <li>
+                                                <form action="{% url 'assign_doctor' pk=patient.assessment.pk %}" method="post" class="dropdown-item p-0">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="doctor_id" value="{{ doctor.pk }}">
+                                                    <button type="submit" class="btn btn-link text-decoration-none text-dark w-100 text-start ps-3">
+                                                      Assign to Dr. {{ doctor.get_full_name }}
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        {% empty %}
+                                            <li><span class="dropdown-item-text">No doctors available in this hospital.</span></li>
+                                        {% endfor %}
+                                      </ul>
+                                    </div>
+                                {% endif %}
+                                {# --- END OF NEW UI --- #}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-5">
+                                <p class="mb-0">No patient records found in your hospital.</p>
+                                {% if user.role == 'HOSPITAL_ADMIN' %}
+                                <a href="{% url 'add_patient' %}" class="btn btn-success mt-2">
+                                    <i class="bi bi-plus-circle"></i> Add First Patient Record
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {# --- END OF REPLACEMENT BLOCK --- #}
                 </table>
             </div>
         </div>
