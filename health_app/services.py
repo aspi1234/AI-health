@@ -18,7 +18,7 @@ client = InferenceClient(token=api_key)
 # --- END OF CORRECTION ---
 
 # This is the model we will use. It's powerful and popular.
-MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
+MODEL_NAME = "HuggingFaceH4/zephyr-7b-beta"
 
 def generate_risk_assessment_for_record(patient_record: PatientRecord) -> str:
     """
