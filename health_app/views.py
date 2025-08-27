@@ -355,7 +355,7 @@ class AssessmentDetailView(DoctorOrAdminRequiredMixin, View):
             return redirect('doctor_dashboard')
         # --- END OF NEW CHECK ---
         
-        assessment.html_report = markdown.markdown(assessment.ai_generated_report)
+        assessment.html_report = markdown.markdown(assessment.ai_generated_report,extensions=['extra','nl2br'])
         
         form = DoctorReviewForm(instance=assessment)
         
@@ -390,7 +390,7 @@ class AssessmentDetailView(DoctorOrAdminRequiredMixin, View):
             return redirect('doctor_dashboard')
         
         # If form is invalid, re-render the page with errors
-        assessment.html_report = markdown.markdown(assessment.ai_generated_report)
+        assessment.html_report = markdown.markdown(assessment.ai_generated_report,extensions=['extra','nl2br'])
         context = {
             'assessment': assessment,
             'patient': assessment.patient_record,
