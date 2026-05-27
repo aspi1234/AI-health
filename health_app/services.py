@@ -18,7 +18,7 @@ client = InferenceClient(token=api_key)
 # --- END OF CORRECTION ---
 
 # This is the model we will use. It's powerful and popular.
-MODEL_NAME = "MiniMaxAI/MiniMax-M2.7:fireworks-ai"
+MODEL_NAME = "MiniMaxAI/MiniMax-M2.7"
 
 def generate_risk_assessment_for_record(patient_record: PatientRecord) -> str:
     """
